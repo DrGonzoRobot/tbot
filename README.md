@@ -4,7 +4,7 @@ Tbot is a very simple Discord bot using discord.py.
 Meant for small servers with friends, tbot allows for the creation
 of macros and commands that are easy to create, manage, and use.
 
-## Dependecies
+## Dependencies
 
 Tbot uses Python3 and the "rewrite" branch of discord.py, 
 so you'll need to install it from GitHub:
