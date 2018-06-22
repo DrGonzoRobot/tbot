@@ -21,7 +21,7 @@ FilePath =
 
 def setup_config(data_path):
     config_path = data_path.joinpath('config.ini')
-    config: ConfigParser = configparser.ConfigParser(interpolation=None)
+    config = configparser.ConfigParser(interpolation=None)
     if config_path not in data_path.iterdir():
         with config_path.open(mode='w') as fin:
             fin.write(default_config_ini)
