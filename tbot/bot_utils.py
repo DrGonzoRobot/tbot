@@ -4,8 +4,8 @@
 def get_token(path):
     try:
         with open(path) as fin:
-            chars: str = fin.read()
-            token: str = "".join([char for char in chars if ord(char) < 128])
+            chars = fin.read()
+            token = "".join([char for char in chars if ord(char) < 128])
 
             return token
 
