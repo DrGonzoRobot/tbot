@@ -6,8 +6,9 @@ of macros and commands that are easy to create, manage, and use.
 
 ## Dependencies
 
-Tbot uses Python3 and the "rewrite" branch of discord.py, 
-so you'll need to install it from GitHub:
+Tbot only uses Python 3.6 and the "rewrite" branch of discord.py, 
+so you'll need to install Python 3.6 for your platfrom and 
+discord.py@rewrite from GitHub:
 
 ```
 pip install git+https://github.com/Rapptz/discord.py.git@rewrite
