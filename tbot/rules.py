@@ -2,9 +2,16 @@
 
 import logging
 tbl = logging.getLogger('TBL')
+"""Logger: global Tbot logger for package."""
 
 
 def admin_cmd(cmd):
+    """
+    Decorator sets decorated command functions as only accessible by users
+    who have the "Admin" role as dictated by config.ini
+    :param cmd: command function being decorated
+    :return: a coroutine or the return from a command function
+    """
     def wrapper(ctx):
         user_roles = [role.name for role in ctx.message.author.roles]
         if not ctx.client.roles['Admin']:

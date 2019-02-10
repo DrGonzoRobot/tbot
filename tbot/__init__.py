@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+__all__ = ['bot_utils', 'client', 'cmd_list', 'config', 'context', 'logs', 'macro_utils', 'rules']
+
 from .client import TBot
 from .context import Context
 

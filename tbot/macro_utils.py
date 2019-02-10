@@ -5,30 +5,50 @@ import configparser
 import logging
 
 tbl = logging.getLogger('TBL')
+"""Logger: global Tbot logger for package."""
 
 
 def setup_macros(client):
+    """
+    Setup function loads client macros or creates a blank macros.ini file in tb_data.
+    :param client: Tbot client
+    :return: macros
+    :rtype: configparser.Configparser
+    """
     macros_path = client.data_path.joinpath('macros.ini')
     macros = configparser.ConfigParser(interpolation=None)
     if macros_path not in client.data_path.iterdir():
         with macros_path.open(mode='w') as fin:
             fin.write('')
             tbl.info('macros.ini created.')
-    macros.read(macros_path, encoding='utf-8')
+    try:
+        macros.read(macros_path, encoding='utf-8')
+    except TypeError:
+        macros.read(str(macros_path), encoding='utf-8')
 
     return macros
 
 
-def save_macros(client, macros):
+async def save_macros(client, macros):
+    """
+    Writes macro Configparser to macros.ini file.
+    :param client: Tbot client
+    :param macros: macros
+    :return: None
+    """
     macros_path = client.data_path.joinpath('macros.ini')
     with macros_path.open(mode='w') as fin:
         macros.write(fin)
     tbl.info('Macros saved.')
-
-    return macros
+    macros.read(macros_path, encoding='utf-8')
 
 
 async def new_macro(ctx):
+    """
+    Creates a new macro cmd.
+    :param ctx: Message context calling command.
+    :return: None
+    """
     err = '!new %name your macro'
     if len(ctx.line) < 2:
         await ctx.message.channel.send(err)
@@ -49,13 +69,18 @@ async def new_macro(ctx):
                                'Upvotes': '',
                                'Downvotes': ''}
     tbl.info('New macro created: {0}'.format(name))
-    save_macros(ctx.client, ctx.client.macros)
+    await save_macros(ctx.client, ctx.client.macros)
 
     await ctx.message.channel.send('{0} has been set by {1}'.format(name, owner))
     return
 
 
 async def list_macros(ctx):
+    """
+    Sends a current list of macros.
+    :param ctx: Message context calling command.
+    :return: None
+    """
     title = 'TBot Macros'
     e = Embed(title=title)
     for macro in ctx.client.macros:
@@ -75,6 +100,11 @@ async def list_macros(ctx):
 
 
 async def upvote(ctx):
+    """
+    Gives an upvote to the macro.
+    :param ctx: Message context calling command.
+    :return: None
+    """
     err = '!upvote %macro'
     if len(ctx.line) != 1:
         await ctx.message.channel.send(err)
@@ -88,7 +118,7 @@ async def upvote(ctx):
             if voter in downs:
                 ctx.client.macros[name]['Downvotes'] = ','.join([down for down in downs if down != voter])
             ctx.client.macros[name]['Upvotes'] = ','.join(ups + [voter])
-            save_macros(ctx.client, ctx.client.macros)
+            await save_macros(ctx.client, ctx.client.macros)
             ups = len(ctx.client.macros[name]['Upvotes'].split(',')) - 1
             downs = len(ctx.client.macros[name]['Downvotes'].split(',')) - 1
             tbl.info("Karma +1 for {0}, new Karma: {1}".format(name, ups - downs))
@@ -103,6 +133,11 @@ async def upvote(ctx):
 
 
 async def downvote(ctx):
+    """
+    Gives a downvote to the macro.
+    :param ctx: Message context calling command.
+    :return: None
+    """
     err = '!downvote %macro'
     if len(ctx.line) != 1:
         await ctx.message.channel.send(err)
@@ -116,7 +151,7 @@ async def downvote(ctx):
             if voter in ups:
                 ctx.client.macros[name]['Upvotes'] = ','.join([up for up in ups if up != voter])
             ctx.client.macros[name]['Downvotes'] = ','.join(downs + [voter])
-            save_macros(ctx.client, ctx.client.macros)
+            await save_macros(ctx.client, ctx.client.macros)
             ups = len(ctx.client.macros[name]['Upvotes'].split(',')) - 1
             downs = len(ctx.client.macros[name]['Downvotes'].split(',')) - 1
             tbl.info("Karma -1 for {0}, new Karma: {1}".format(name, ups - downs))
