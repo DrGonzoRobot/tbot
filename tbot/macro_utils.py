@@ -22,9 +22,9 @@ def setup_macros(client):
             fin.write('')
             tbl.info('macros.ini created.')
     try:
-        macros.read(macros_path, encoding='utf-8')
+        macros.read_file(macros_path.open(errors='ignore'))
     except TypeError:
-        macros.read(str(macros_path), encoding='utf-8')
+        macros.read_file(open(str(macros_path), errors='ignore'))
 
     return macros
 
@@ -40,7 +40,7 @@ async def save_macros(client, macros):
     with macros_path.open(mode='w') as fin:
         macros.write(fin)
     tbl.info('Macros saved.')
-    macros.read(macros_path, encoding='utf-8')
+    macros.read_file(macros_path.open(errors='ignore'))
 
 
 async def new_macro(ctx):
@@ -60,6 +60,10 @@ async def new_macro(ctx):
     owner = ctx.message.author.name
     if name in ctx.client.macros:
         prev_owner = ctx.client.macros[name]['Owner']
+        if ctx.client.roles['Admin']:
+            user_roles = [role.name for role in ctx.message.author.roles]
+            if ctx.client.roles['Admin'] in user_roles:
+                prev_owner = owner
         if prev_owner != owner:
             await ctx.message.channel.send('{0} has already been set by {1}'.format(name, prev_owner))
             return

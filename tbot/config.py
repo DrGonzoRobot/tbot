@@ -3,6 +3,8 @@
 
 import configparser
 import logging
+from zipfile import ZipFile
+import os
 
 tbl = logging.getLogger('TBL')
 """Logger: global Tbot logger for package."""
@@ -15,6 +17,12 @@ Name = TBot Beta Dev
 [ROLES]
 Admin = 
 Banned = 
+
+[BACKUP]
+Path = 
+
+[FFMPEG]
+Path =
 '''
 
 
@@ -32,8 +40,24 @@ def setup_config(data_path):
             fin.write(default_config_ini)
             tbl.info('config.ini created.')
     try:
-        config.read(config_path, encoding='utf-8')
+        config.read_file(config_path.open(errors='ignore'))
     except TypeError:
-        config.read(str(config_path), encoding='utf-8')
+        config.read_file(open(str(config_path), errors='ignore'))
 
     return config
+
+
+def setup_backup(start_path, data_path, backup_path):
+    with ZipFile(backup_path, 'w') as backup:
+        os.chdir(data_path)
+        for fname in data_path.iterdir():
+            backup.write(os.path.basename(fname))
+        os.chdir(start_path)
+
+
+async def save_backup(start_path, data_path, backup_path):
+    with ZipFile(backup_path, 'w') as backup:
+        os.chdir(data_path)
+        for fname in data_path.iterdir():
+            backup.write(os.path.basename(fname))
+        os.chdir(start_path)

@@ -5,19 +5,28 @@ from discord import Client
 from .context import Context
 from .cmd_list import cmds
 from .logs import start_log
-from .config import setup_config
+from .config import setup_config, save_backup
+from .audio import setup_audio_config, play_clip
 from .macro_utils import setup_macros, save_macros
+from .bot_utils import debug_message
 import logging
 import sys
 import os
-from pathlib import Path
+import asyncio
+from pathlib import Path, WindowsPath
 import importlib.util as iu
+import distutils.spawn
 
 
 class TBot(Client):
     """This is the main client class."""
 
-    def __init__(self, data_path=None):
+    def __init__(self,
+                 data_path=None,
+                 backup_path=None,
+                 clips_path=None,
+                 ffmpeg_path=None,
+                 debug=False):
         """
         :param data_path: (Optional) Absolute path string to a tb_data directory
         :type data_path: str or None
@@ -30,6 +39,12 @@ class TBot(Client):
         self._data_path = None
         self.data_path = data_path
 
+        self._backup_path = None
+        self.backup_path = backup_path
+
+        self._clips_path = None
+        self.clips_path = clips_path
+
         start_log(self)
         
         self._tbl = None
@@ -38,8 +53,19 @@ class TBot(Client):
 
         self._config = None
         self.config = setup_config(self.data_path)
+
+        self._audio_config = None
+        self.audio_config = setup_audio_config(self.data_path)
+
+        self._ffmpeg_path = None
+        self.ffmpeg_path = ffmpeg_path
+
+        self._voice = None
+        self.voice = None
+
         self._macros = None
         self.macros = setup_macros(self)
+
         self.tbl.info('Config loaded.')
 
         self._roles = None
@@ -49,6 +75,8 @@ class TBot(Client):
         self._cmds = None
         self.cmds = cmds
         self.tbl.info('Commands loaded.')
+
+        self.debug = debug
 
         self.tbl.info('Initialized! Get ready for action!')
 
@@ -85,10 +113,6 @@ class TBot(Client):
     def start_path(self, path):
         self._start_path = Path(os.path.dirname(path))
 
-    @start_path.deleter
-    def start_path(self):
-        del self._start_path
-
     @property
     def data_path(self):
         """
@@ -106,10 +130,46 @@ class TBot(Client):
                 path.mkdir()
         self._data_path = Path(path)
 
-    @data_path.deleter
-    def data_path(self):
-        del self._data_path
-        
+    @property
+    def backup_path(self):
+        return self._backup_path
+
+    @backup_path.setter
+    def backup_path(self, path):
+        if path is not None:
+            if path[-4:] != '.zip':
+                path += '.zip'
+            self._backup_path = Path(path)
+
+    @property
+    def clips_path(self):
+        """
+        Path where tb_data is located
+        :return: clips_path
+        :rtype: pathlib.Path
+        """
+        return self._clips_path
+
+    @clips_path.setter
+    def clips_path(self, path):
+        if path is None:
+            path = self._data_path.joinpath('clips')
+            if path not in self._data_path.iterdir():
+                path.mkdir()
+        self._clips_path = Path(path)
+
+    @property
+    def ffmpeg_path(self):
+        return self._ffmpeg_path
+
+    @ffmpeg_path.setter
+    def ffmpeg_path(self, path):
+        if path:
+            path = str(WindowsPath(path))
+            if distutils.spawn.find_executable(path):
+                self.config['FFMPEG']['Path'] = path
+                self._ffmpeg_path = path
+
     @property
     def tbl(self):
         """
@@ -122,10 +182,6 @@ class TBot(Client):
     @tbl.setter
     def tbl(self, obj):
         self._tbl = obj
-
-    @tbl.deleter
-    def tbl(self):
-        del self._tbl
 
     @property
     def config(self):
@@ -140,9 +196,26 @@ class TBot(Client):
     def config(self, obj):
         self._config = obj
 
-    @config.deleter
-    def config(self):
-        del self._config
+    @property
+    def audio_config(self):
+        """
+        Tbot config file
+        :return: audio_config
+        :rtype: configparser.ConfigParser
+        """
+        return self._audio_config
+
+    @audio_config.setter
+    def audio_config(self, obj):
+        self._audio_config = obj
+
+    @property
+    def voice(self):
+        return self._voice
+
+    @voice.setter
+    def voice(self, obj):
+        self._voice = obj
 
     @property
     def macros(self):
@@ -157,10 +230,6 @@ class TBot(Client):
     def macros(self, obj):
         self._macros = obj
 
-    @macros.deleter
-    def macros(self):
-        del self._macros
-
     @property
     def roles(self):
         """
@@ -172,10 +241,6 @@ class TBot(Client):
     @roles.setter
     def roles(self, obj):
         self._roles = obj
-
-    @roles.deleter
-    def roles(self):
-        del self._roles
 
     @property
     def cmds(self):
@@ -190,18 +255,18 @@ class TBot(Client):
     def cmds(self, obj):
         self._cmds = obj
 
-    @cmds.deleter
-    def cmds(self):
-        del self._cmds
-
-    @staticmethod
-    async def on_ready():
+    async def on_ready(self):
         banner = '''
         +=========================================+
-        (╯°□°）╯︵ ┻━┻ [  TB v3.51d  ] ┬─┬ ノ( ゜-゜ノ) 
+        (╯°□°）╯︵ ┻━┻ [  TB v4.0  ] ┬─┬ ノ( ゜-゜ノ) 
         +=========================================+
         '''
         print(banner)
+
+        if self.backup_path:
+            while True:
+                await save_backup(self.start_path, self.data_path, self.backup_path)
+                await asyncio.sleep(60)
 
     async def on_message(self, message):
         """
@@ -227,10 +292,24 @@ class TBot(Client):
                 self.tbl.info('%s: %s' % (str(message.author), message.content))
                 await self.cmds[ctx.cmd](ctx)
 
-        if message.content.startswith('%'):
+        elif message.content.startswith('%'):
             if ctx.cmd in self.macros:
                 self.tbl.info('%s: %s' % (str(message.author), message.content))
                 cnt = self.macros[ctx.cmd]['Count']
                 self.macros[ctx.cmd]['Count'] = str(int(cnt) + 1)
                 await save_macros(self, self.macros)
                 await message.channel.send(self.macros[ctx.cmd]['Macro'])
+
+        elif message.content.startswith('&'):
+            if not self.ffmpeg_path:
+                await message.channel.send('Audio is not configured for this bot.')
+                return
+            self.tbl.info('%s: %s' % (str(message.author), message.content))
+            if ctx.cmd in self.audio_config:
+                self.tbl.info('%s: %s' % (str(message.author), message.content))
+                clip = self.audio_config[ctx.cmd]['Clip']
+                await message.channel.send(clip)
+                await play_clip(ctx, self.clips_path, clip)
+
+        if self.debug:
+            debug_message(ctx)
