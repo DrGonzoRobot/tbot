@@ -12,8 +12,9 @@ from .bot_utils import debug_message
 import logging
 import sys
 import os
+import platform
 import asyncio
-from pathlib import Path, WindowsPath
+from pathlib import Path, WindowsPath, PosixPath
 import importlib.util as iu
 import distutils.spawn
 
@@ -165,7 +166,11 @@ class TBot(Client):
     @ffmpeg_path.setter
     def ffmpeg_path(self, path):
         if path:
-            path = str(WindowsPath(path))
+            if platform.system() == "Windows":
+                path = str(WindowsPath(path))
+            elif platform.system() == "Linux":
+                path = str(PosixPath(path))
+
             if distutils.spawn.find_executable(path):
                 self.config['FFMPEG']['Path'] = path
                 self._ffmpeg_path = path
