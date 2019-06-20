@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='tbot',
-    version='3.5.1',
+    version='4.0.0',
     packages=['tbot',],
     license='MIT',
 )
