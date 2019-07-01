@@ -17,7 +17,7 @@ import asyncio
 from pathlib import Path, WindowsPath, PosixPath
 import importlib.util as iu
 import distutils.spawn
-
+import random
 
 class TBot(Client):
     """This is the main client class."""
@@ -310,9 +310,14 @@ class TBot(Client):
                 await message.channel.send('Audio is not configured for this bot.')
                 return
             self.tbl.info('%s: %s' % (str(message.author), message.content))
+            clip = None
+            if ctx.cmd == "&random":
+                clips = [clip for clip in self.audio_config.keys() if str(clip) != "DEFAULT"]
+                clip = random.choice(clips)
+                clip = self.audio_config[clip]['Clip']
             if ctx.cmd in self.audio_config:
-                self.tbl.info('%s: %s' % (str(message.author), message.content))
                 clip = self.audio_config[ctx.cmd]['Clip']
+            if clip:
                 await message.channel.send(clip)
                 await play_clip(ctx, self.clips_path, clip)
 

@@ -12,3 +12,5 @@ from .bot_utils import get_token, test
 from .macro_utils import new_macro, list_macros
 
 from .cmd_list import cmds
+
+name = "tbot"

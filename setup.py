@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='tbot',
-    version='4.0.1',
+    version='4.0.2',
     license='MIT',
     long_description=long_description,
     packages=setuptools.find_packages()
