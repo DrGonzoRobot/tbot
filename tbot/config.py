@@ -36,8 +36,8 @@ def setup_config(data_path):
     config_path = data_path.joinpath('config.ini')
     config = configparser.ConfigParser(interpolation=None)
     if config_path not in data_path.iterdir():
-        with config_path.open(mode='w') as fin:
-            fin.write(default_config_ini)
+        with config_path.open(mode='w') as fout:
+            fout.write(default_config_ini)
             tbl.info('config.ini created.')
     try:
         config.read_file(config_path.open(errors='ignore'))

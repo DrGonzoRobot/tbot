@@ -8,16 +8,16 @@ tbl = logging.getLogger('TBL')
 """Logger: global Tbot logger for package."""
 
 
-def setup_macros(client):
+def setup_macros(data_path):
     """
     Setup function loads client macros or creates a blank macros.ini file in tb_data.
     :param client: Tbot client
     :return: macros
     :rtype: configparser.Configparser
     """
-    macros_path = client.data_path.joinpath('macros.ini')
+    macros_path = data_path.joinpath('macros.ini')
     macros = configparser.ConfigParser(interpolation=None)
-    if macros_path not in client.data_path.iterdir():
+    if macros_path not in data_path.iterdir():
         with macros_path.open(mode='w') as fin:
             fin.write('')
             tbl.info('macros.ini created.')

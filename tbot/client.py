@@ -6,9 +6,11 @@ from .context import Context
 from .cmd_list import cmds
 from .logs import start_log
 from .config import setup_config, save_backup
+from .profiles import setup_profiles
 from .audio import setup_audio_config, play_clip
 from .macro_utils import setup_macros, save_macros
 from .bot_utils import debug_message
+from .profiles import get_profile, save_profile, get_all_profiles
 import logging
 import sys
 import os
@@ -18,6 +20,7 @@ from pathlib import Path, WindowsPath, PosixPath
 import importlib.util as iu
 import distutils.spawn
 import random
+
 
 class TBot(Client):
     """This is the main client class."""
@@ -65,7 +68,7 @@ class TBot(Client):
         self.voice = None
 
         self._macros = None
-        self.macros = setup_macros(self)
+        self.macros = setup_macros(self.data_path)
 
         self.tbl.info('Config loaded.')
 
@@ -73,11 +76,19 @@ class TBot(Client):
         self.roles = self.config['ROLES']
         self.tbl.info('Roles loaded.')
 
+        self._profiles = None
+        self.profiles = setup_profiles(self.data_path)
+        self.tbl.info('Profiles loaded.')
+
         self._cmds = None
         self.cmds = cmds
         self.tbl.info('Commands loaded.')
 
         self.debug = debug
+
+        self.get_profile = get_profile
+        self.save_profile = save_profile
+        self.get_all_profiles = get_all_profiles
 
         self.tbl.info('Initialized! Get ready for action!')
 
@@ -94,6 +105,7 @@ class TBot(Client):
             if path.exists():
                 ext_path = path
         mods = [path for path in ext_path.iterdir()]
+
         for mod in mods:
             spec = iu.spec_from_file_location(mod.name.split('.')[0], mod)
             if spec:
@@ -189,6 +201,14 @@ class TBot(Client):
         self._tbl = obj
 
     @property
+    def profiles(self):
+        return self._profiles
+
+    @profiles.setter
+    def profiles(self, obj):
+        self._profiles = obj
+
+    @property
     def config(self):
         """
         Tbot config file
@@ -263,7 +283,7 @@ class TBot(Client):
     async def on_ready(self):
         banner = '''
         +=========================================+
-        (╯°□°）╯︵ ┻━┻ [  TB v4.0  ] ┬─┬ ノ( ゜-゜ノ) 
+        (╯°□°）╯︵ ┻━┻ [  TB v4.3  ] ┬─┬ ノ( ゜-゜ノ) 
         +=========================================+
         '''
         print(banner)
