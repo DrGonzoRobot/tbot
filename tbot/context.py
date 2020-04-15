@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-"""This module contains the Context class for handling commands."""
+
+import logging
+
+tbl = logging.getLogger('TBL')
 
 
 class Context:
-    """A context object is created when a command message is read
-    and is meant to be passed to the function for that command."""
 
     def __init__(self, client, message):
         self.__slots__ = ['client', 'message', 'line', 'cmd']
@@ -21,12 +22,19 @@ class Context:
         self._cmd = None
         self.cmd = message
 
+        if any([self.cmd in self.client.cmds,
+                self.cmd in self.client.catalog['macros'],
+                self.cmd in self.client.catalog['audio']]):
+            log = '%s: <%s> %s' % (self.message.author,
+                                   self.cmd,
+                                   self.line)
+            if self.client.config['roles']['admin'] in [role.name for role in self.message.author.roles]:
+                log = "(admin) " + log
+            log = str("{%s} " % self.message.channel) + log
+            tbl.info(log)
+
     @property
     def client(self):
-        """
-        :return: Client creating the Context object.
-        :rtype: tbot.Tbot
-        """
         return self._client
 
     @client.setter
@@ -39,10 +47,6 @@ class Context:
 
     @property
     def message(self):
-        """
-        :return: Message object containing command.
-        :rtype: discord.Message
-        """
         return self._message
 
     @message.setter
@@ -59,10 +63,7 @@ class Context:
 
     @line.setter
     def line(self, obj):
-        """
-        :return: List containing message contents that come after command.
-        :rtype: list
-        """
+
         def _get_line(message):
             line = message.content.split(' ')
             if len(line) <= 1:
@@ -77,10 +78,6 @@ class Context:
 
     @property
     def cmd(self):
-        """
-        :return: String for command from message.
-        :rtype: str
-        """
         return self._cmd
 
     @cmd.setter
